@@ -30,35 +30,41 @@ async function getAccessToken() {
 app.post("/send-noti", async (req, res) => {
   try {
     const { title, body, tokens, data } = req.body;
-
     const accessToken = await getAccessToken();
 
-    const message = {
-      message: {
-        token: tokens[0], // 1 token test trước
-        notification: { title, body },
-        data,
-      },
-    };
+    const results = [];
 
-    const response = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + accessToken,
-          "Content-Type": "application/json",
+    for (const tk of tokens) {
+      const message = {
+        message: {
+          token: tk,
+          notification: { title, body },
+          data,
         },
-        body: JSON.stringify(message),
-      }
-    );
+      };
 
-    const result = await response.json();
-    res.json(result);
+      const response = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + accessToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(message),
+        }
+      );
+
+      results.push(await response.json());
+    }
+
+    res.json(results);
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Error sending notification");
   }
 });
+
 
 app.listen(3000, () => console.log("Server running"));
